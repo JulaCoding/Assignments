@@ -31,5 +31,39 @@ q1_answer_plot %>%
           geom_bar(position = "dodge", stat = "identity")+
           labs(title = "Q1.Top 15 Harmful events", x="Event type", y = "Count")+
           theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-  
+ 
+#Question2 : Across the United States, which types of events have the greatest economic consequences?
+#In the storm data the damage estimates were entered as dollar amounts (PROPDMG) but the amount was rounded to three digits and the magnitude was signified by Kfor thousands, M for million and B for billion
 
+#Create a new variable where letter are changed to coressponding numbers and then use it to multiply the numbers
+q2<- storm %>% select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG,CROPDMGEXP)
+q2$PROPDMG_AMOUNT<- with(q2,
+                            ifelse(PROPDMGEXP %in% c("k","K"), PROPDMG*1000,
+                                   ifelse(PROPDMGEXP %in% c("m","M"), PROPDMG*1000000,
+                                          ifelse(PROPDMGEXP %in% c("b","B"), PROPDMG*1000000000,
+                                                 0)
+                                          )
+                            )
+)
+q2$CROPDMG_AMOUNT<- with(q2,
+                         ifelse(CROPDMGEXP %in% c("k","K"), CROPDMG*1000,
+                                ifelse(CROPDMGEXP %in% c("m","M"), CROPDMG*1000000,
+                                       ifelse(CROPDMGEXP %in% c("b","B"), CROPDMG*1000000000,
+                                              0)
+                                )
+                         )
+)
+q2<- q2 %>% mutate(TOTAL_DMG_VALUE = CROPDMG_AMOUNT+PROPDMG_AMOUNT) %>%
+                   select(EVTYPE, TOTAL_DMG_VALUE)
+q2_answer<- aggregate(TOTAL_DMG_VALUE~EVTYPE, data = q2, sum)
+q2_answer<- arrange(q2_answer, desc(TOTAL_DMG_VALUE))
+#Plot 2
+library(ggplot2)
+q2_answer_plot<- q2_answer[1:15,]
+q2_answer_plot %>%
+          ggplot(aes(y=TOTAL_DMG_VALUE, x=reorder(EVTYPE,-TOTAL_DMG_VALUE)))+
+          geom_bar(position = "dodge", stat = "identity")+
+          labs(title = "Q2.Events with greatest economic consequences", x="Event type", y = "US Dollars")+
+          theme(axis.text.x = element_text(angle = 45, hjust = 1)
+                ) 
+          
