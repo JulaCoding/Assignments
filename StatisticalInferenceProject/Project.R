@@ -27,3 +27,11 @@ hist(simMeans, main = "Figure1. Comparison of Sample Meand and Theoretical Mean"
 abline(v= sampleMean, lw = 4, col= "red")
 abline(v= theoreticalMean, lw = 4, col = "green")
 # Conclusion : The sample mean is 5.011 whereas the theoretical mean is 5. The center of distribution of averages of 40 exponential is very close to the theoretical center of the distribution
+
+# Comparing simulated variance to theoretical
+sampleVar<- var(simMeans)
+sampleVar
+theoreticalSD<- (1/lambda)/sqrt(n) 
+theoreticalSD
+theoreticalVAr<- theoreticalSD^2
+theoreticalVAr
