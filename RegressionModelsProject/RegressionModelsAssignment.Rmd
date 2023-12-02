@@ -2,7 +2,9 @@
 title: "RegressionModelsAssignment"
 author: "JB"
 date: "2023-12-01"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 #Executive Summary
 This report explores the relationship between transmission type (automatic or manual) and miles per gallon (MPG) in the Motor Trend dataset. We address two main questions: 
