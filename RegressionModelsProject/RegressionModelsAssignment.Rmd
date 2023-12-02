@@ -1,0 +1,102 @@
+---
+title: "RegressionModelsAssignment"
+author: "JB"
+date: "2023-12-01"
+output: html_document
+---
+#Executive Summary
+This report explores the relationship between transmission type (automatic or manual) and miles per gallon (MPG) in the Motor Trend dataset. We address two main questions: 
+ 1) Is an automatic or manual transmission better for MPG? 
+ 2) What is the quantified MPG difference between automatic and manual transmissions?
+From our analysis we can say the automatic transmission yields better MPG than manual. When holding the weight and accelration of the car constant, cars with manual transmission add 14.079 + (-4.141)*wt more MPG (miles per gallon) on average than cars with automatic transmission.
+
+## Loading data and packages
+
+```{r}
+library(MASS)
+library(ggplot2)
+data(mtcars)
+```
+
+## Data manipulation
+
+```{r}
+str(mtcars)
+mtcars$am = as.factor(mtcars$am)
+levels(mtcars$am)=c("AT", "MT")
+```
+
+We change the am variable from a numeric class to a factor class to improve the model interpretability.
+
+## Comparison of the effect of automatic or manual transmission on MPG
+
+```{r}
+boxplot(mpg ~ am, data = mtcars, col = c("red", "blue"), xlab = "Transmission Type", ylab = "MPG", main = "AT vs MT")
+t_test_result<- t.test(mtcars$mpg ~ mtcars$am)
+t_test_result$p.value
+t_test_result$estimate
+
+levels(mtcars$am)=as.numeric(c(1,0))
+mtcars$am=as.numeric(mtcars$am)
+
+model1 <- lm(mpg ~ factor(am), data = mtcars)
+summary(model1)
+```
+
+The plot shows that manual transmission yields  better mileage than automatic but we will perform a statistical t-test to confirm that result. Our null hypothesis is that AT and MT have no different effect on MPG.
+Since the p-value of the test is lower than 0.05 the Null hypothesis is rejected, therefore we can say that MT and AT are from different populations. 
+We see that for automatic transmission cars (am=0) the milege is 17.147 mpg holding other variables constant. For manual transmission cars, there is 7.245 units increase in mpg (in comparison to AT) while holding other variables constant.
+
+## Correlation between MPG vs. other attributes of the Cars
+
+We use the cor() function on the variables from MTCARS dataset to understand the correlation between the variables, we extracted especially the MPG vs all data as it is the most relevant. This information helps us to decide the variables that may influence the MPG during regression analysis.
+
+```{r}
+Correltion<- cor(mtcars[, c(1:11)])
+MPG_cor<-Correltion[,1]
+MPG_cor
+```
+
+We see that some variables are negatively correlated to MPG it e.g. (cyl) number of cylinders or (wt) car weight. Other have positive effect on the mileage like (qsec) accelaration speed or (am) transmission. This doesn't however reveal any information on causation.
+ 
+## Regression model MPG vs ALL
+
+For building a linear regression model, appropriate variable is absolute necessary. Including too few variables may cause bias and including too many would cause high variance and over fitting issues. in such situations model selection becomes ideal. In our case we use step() function to choose the best model based on AIC in a stepwise algorithm.
+
+```{r results='hide'}
+model_step<- step(lm(mpg~., mtcars))
+```
+```{r}
+summary(model_step)
+```
+
+Through the step function over lm() model, we see that variables like “car weight (wt)” and “Acceleration Speed (qsec)” turns out to be good predictors od Milege mpg. These variables where able to explain 84% of variation in Milege (mpg).
+
+## Regression model MPG vs WT:AM
+
+From the correlation matrix we can see that there appears to be a strong interaction between variables WT and AM. This might be due to the fact that automatic cars weight more than manuals. The interaction will be checked by the following regression model
+
+```{r}
+modelAMinWT<- lm(mpg~ wt + qsec + am + wt:am, mtcars)
+summary(modelAMinWT)
+```
+
+This model has the Residual standard error as 2.084 on 27 degrees of freedom. And the Adjusted R-squared value is 0.8804, which means that the model can explain about 88% of the variance of the MPG variable. All of the coefficients are significant at 0.05 significant level, which is satisfactory.
+
+Based on the Adjusted R-squared Value the chosen model is the modelAMinWT.
+ 
+## Residual plots
+
+```{r}
+par(mfrow= c(2,2))
+plot(modelAMinWT)
+```
+
+Looking at the residual plots, we observe that The Residuals vs. Fitted plot shows no consistent pattern, supporting the accuracy of the independence assumption. The Normal Q-Q plot indicates that the residuals are normally distributed because the points lie closely to the line.The Scale-Location plot confirms the constant variance assumption, as the points are randomly distributed. The Residuals vs. Leverage argues that no outliers are present, as all values fall well within the 0.5 bands.
+
+## Summary
+```{r}
+summary(modelAMinWT)$coef
+```
+
+Based on this information we can say that when wt and qsec remain constant cars with manual transmission add 14.079 + (-4.141)*wt more MPG (miles per gallon) on average than cars with automatic transmission.
