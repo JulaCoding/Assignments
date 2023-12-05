@@ -1,0 +1,129 @@
+---
+title: "PracticalMachineLearningProject"
+author: "JB"
+date: "2023-12-05"
+output: html_document
+---
+# Overview
+For this project we use data from the accelerometers on the belt, forearm, arm and dumbbell of 6 participants to predict the manner in which they did the exercise. 
+
+# Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: 
+[link](http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har)
+ (see the section on the Weight Lifting Exercise Dataset).
+
+The training data for this project are available here:
+
+[Training Data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
+
+The test data are available here:
+
+[Test Data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)
+
+The data for this project come from this source: 
+http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har
+. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+#Loading packages and data
+```{r}
+library(readr)
+library(lattice)
+library(ggplot2)
+library(caret)
+library(kernlab)
+library(rattle)
+library(corrplot)
+
+set.seed(1234)
+
+train_URL<- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+download.file(url=train_URL, destfile="data/training.csv")
+train<- read_csv("data/training.csv")
+
+test_URL<- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(url=test_URL, destfile="data/testing.csv")
+test<- read_csv("data/testing.csv")
+
+dim(train)
+dim(test)
+```
+
+We can see that for 160 variables, 19622 observations are in training set and 20 in the test set.
+ 
+# Cleaning data
+
+```{r}
+# removing data that doesnt contain any predictors
+train<- train[,-c(1:7)] 
+# removing columns with many NA values, using treshold of 90%
+train<- train[,colMeans(is.na(train))< 0.9]
+# checkinf for near zero variables
+nzv<- nearZeroVar(train)
+print(nzv == TRUE)
+# there is no near zero variables to delete
+dim(train)
+```
+
+The data set now got limited to only 53 variables, which will improve the process of creating models. Now we will divide the training data set into a validation and sub-training set. Test set will be used for final testing.
+
+```{r}
+trainData<- createDataPartition(y=train$classe, p=0.7, list = FALSE)
+trainT<- train[trainData,]
+trainV<- train[-trainData,]
+```
+
+# Creating the models
+
+We will create several different models and compare them. The models of interest are: decision trees, random forest, gradient boosted trees.
+Control will be set so that we can use 5-fold cross validation
+```{r}
+control<- trainControl(method = "cv", number = 5, verboseIter = FALSE)
+```
+
+# Decision tree
+```{r}
+model_tree<- train(classe~., method = "rpart", data=trainT, trControl = control)
+fancyRpartPlot(model_tree$finalModel)
+
+pred_tree<- predict(model_tree, newdata = trainV)
+cmtree<- confusionMatrix(pred_tree, factor(trainV$classe))
+cmtree
+```
+
+# Random Forest model
+
+```{r}
+model_rf<- train(classe~., method = "rf", data=trainT, trControl = control, tuneLength = 5)
+pred_rf<- predict(model_rf, newdata = trainV)
+cmrf<- confusionMatrix(pred_rf, factor(trainV$classe))
+cmrf
+```
+
+#Gradient Boosted Trees
+
+```{r}
+model_gbm <- train(classe~., data=trainT, method="gbm", trControl = control, tuneLength = 5, verbose = F)
+
+pred_gbm <- predict(model_gbm, newdata = trainV)
+cmgbm <- confusionMatrix(pred_gbm, factor(trainV$classe))
+cmgbm
+```
+
+# Final Model Decision
+
+```{r, echo=FALSE}
+rbind("Decision Tree" = c(Accuracy = 0.4912), "Random Forest" = c(Accuracy = 0.9952), "Gradient Boosted Trees" = c(Accuracy = 0.99))
+```
+
+Comparing all models together, we can see that the random forest model has the best accuracy. Therefore model_rf will be chosen predict the classe (5 levels) outcome for 20 cases. 
+
+# Prediction on test
+
+```{r}
+prediction<- predict(model_rf, newdata = test)
+print(prediction)
+```
+
+
+ 
