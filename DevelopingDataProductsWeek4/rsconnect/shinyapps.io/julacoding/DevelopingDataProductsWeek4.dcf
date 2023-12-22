@@ -1,0 +1,12 @@
+name: DevelopingDataProductsWeek4
+title: DevelopingDataProductsWeek4
+username: julacoding
+account: julacoding
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10839951
+bundleId: 8076610
+url: https://julacoding.shinyapps.io/DevelopingDataProductsWeek4/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
